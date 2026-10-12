@@ -675,6 +675,34 @@ img { display: block; max-width: 100%; }
   color: #777;
 }
 
+.modal__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  font-size: 17px;
+  color: var(--fg);
+  background:
+    radial-gradient(120% 70% at 50% 0%, var(--accent-deep) 0%, transparent 65%),
+    var(--card-bg);
+}
+.modal__fallback-play {
+  width: 72px; height: 72px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  transition: background 0.4s, color 0.4s;
+}
+.modal__fallback:hover .modal__fallback-play { background: var(--fg); color: var(--bg); }
+
 .modal__info { display: flex; flex-direction: column; gap: 18px; padding-bottom: 6px; }
 .modal__no { color: var(--fg-muted); }
 .modal__title {
