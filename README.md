@@ -27,6 +27,7 @@ python3 -m http.server 8000
   parallax strength and stacking, `rot` is base rotation, `motif` picks the abstract cover
   (`rings`, `bars`, `wave`, `grid`, `orbit`, `slash`). A card with `views: null` shows "New".
 - **Colours** — CSS variables in `:root` (dark) and `:root[data-theme="light"]`.
+- **Player** — the modal embeds `https://www.tiktok.com/embed/v2/VIDEO_ID` in an iframe (`embedUrl` in `js/main.js`).
 - **Thumbnails** — fetched from TikTok oEmbed when the browser allows it; otherwise the generative
   motif is shown.
 

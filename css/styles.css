@@ -655,8 +655,9 @@ img { display: block; max-width: 100%; }
 
 .modal__player {
   position: relative;
-  height: min(82vh, 760px);
-  aspect-ratio: 9 / 16;
+  width: 340px;
+  max-width: 100%;
+  height: min(86vh, 760px);
   background: #000;
   border: 1px solid var(--line);
   overflow: hidden;
@@ -674,34 +675,6 @@ img { display: block; max-width: 100%; }
   place-items: center;
   color: #777;
 }
-
-.modal__fallback {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 24px;
-  text-align: center;
-  font-size: 17px;
-  color: var(--fg);
-  background:
-    radial-gradient(120% 70% at 50% 0%, var(--accent-deep) 0%, transparent 65%),
-    var(--card-bg);
-}
-.modal__fallback-play {
-  width: 72px; height: 72px;
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 16px;
-  transition: background 0.4s, color 0.4s;
-}
-.modal__fallback:hover .modal__fallback-play { background: var(--fg); color: var(--bg); }
 
 .modal__info { display: flex; flex-direction: column; gap: 18px; padding-bottom: 6px; }
 .modal__no { color: var(--fg-muted); }
@@ -758,6 +731,13 @@ img { display: block; max-width: 100%; }
 .modal__close:hover span:last-child  { transform: translate(-50%, -50%) rotate(45deg); }
 
 body.is-locked { overflow: hidden; }
+/* the custom cursor can't follow the pointer into the player iframe */
+.is-locked .cursor { opacity: 0 !important; }
+.has-cursor .modal,
+.has-cursor .modal a,
+.has-cursor .modal button { cursor: auto; }
+.has-cursor .modal a,
+.has-cursor .modal button { cursor: pointer; }
 
 /* ---------- 12. Responsive ---------- */
 @media (max-width: 1100px) {
@@ -812,7 +792,7 @@ body.is-locked { overflow: hidden; }
     overflow-y: auto;
     max-height: 100%;
   }
-  .modal__player { height: auto; width: min(100%, 52vh * 9 / 16); width: min(100%, calc(52svh * 9 / 16)); justify-self: center; }
+  .modal__player { width: min(100%, 340px); height: 68vh; height: 68svh; justify-self: center; }
   .modal__info { gap: 12px; }
   .modal__title { font-size: 30px; }
   .modal__views-value { font-size: 52px; }

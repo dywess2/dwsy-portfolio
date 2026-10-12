@@ -29,8 +29,7 @@ const WORKS = [
 
 const HANDLE = 'dwsy.ae';
 const videoUrl = (id) => `https://www.tiktok.com/@${HANDLE}/video/${id}`;
-const playerUrl = (id) =>
-  `https://www.tiktok.com/player/v1/${id}?autoplay=1&music_info=1&description=1&rel=0`;
+const embedUrl = (id) => `https://www.tiktok.com/embed/v2/${id}?lang=en-US`;
 
 /* ---------- helpers ---------- */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -160,7 +159,6 @@ function renderCards() {
 /* Progressive enhancement: pull real thumbnails via TikTok oEmbed.
    If the request fails (offline, blocked, CORS) the abstract motif stays. */
 function loadThumbnails() {
-  if (window.DWSY_NO_EMBED) return;
   $$('.card', field).forEach((card) => {
     const work = WORKS[card.dataset.index];
     fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl(work.id))}`)
@@ -349,10 +347,6 @@ function updateCursor() {
    ========================================================= */
 const modal = $('.modal');
 const frame = $('.modal__frame', modal);
-const fallback = $('.modal__fallback', modal);
-// Set window.DWSY_NO_EMBED = true where third-party iframes are blocked
-// (e.g. sandboxed previews); the player area then links out to TikTok.
-const noEmbed = !!window.DWSY_NO_EMBED;
 const loader = $('.modal__loader', modal);
 let current = -1;
 let lastFocus = null;
@@ -366,14 +360,8 @@ function fillModal(i) {
   $('.modal__views-value', modal).textContent = w.views || 'New';
   $('.modal__views .mono', modal).textContent = w.views ? 'views' : 'latest drop';
   $('.modal__cta', modal).href = videoUrl(w.id);
-  if (noEmbed) {
-    fallback.href = videoUrl(w.id);
-    fallback.hidden = false;
-    loader.hidden = true;
-    return;
-  }
   loader.hidden = false;
-  frame.src = playerUrl(w.id);
+  frame.src = embedUrl(w.id);
 }
 
 function openModal(i, origin) {
@@ -394,7 +382,7 @@ function closeModal() {
   document.body.classList.remove('is-locked');
   closeTimer = setTimeout(() => {
     modal.hidden = true;
-    if (!noEmbed) frame.src = 'about:blank'; // stops playback
+    frame.src = 'about:blank'; // stops playback
   }, 450);
   if (lastFocus) lastFocus.focus({ preventScroll: true });
 }
