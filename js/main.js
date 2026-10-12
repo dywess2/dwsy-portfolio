@@ -1,32 +1,34 @@
 /* =========================================================
    dwsy. — portfolio script
    ---------------------------------------------------------
-   Edit the WORKS array to change videos, views, titles or
-   the position of each card in the floating gallery.
+   Edit WORKS to change videos, numbers or titles, and
+   PROFILE for the account totals. Everything else on the
+   page (totals, averages, index list) is computed from these.
 
-   Layout fields (desktop only — mobile uses a 2-col flow):
-     x, y   position inside the field, in % (left / top)
-     w      card width (any CSS length)
-     depth  0.5 … 1.5 — how "close" the card is. Higher =
-            more parallax, more mouse reaction, sits on top.
-     rot    base rotation in degrees
-     motif  rings | bars | wave | grid | orbit | slash
-            (abstract cover shown until the real thumbnail loads)
+     views / likes  exact display strings ("4.4M", "712K")
+     motif          rings | bars | wave | grid | orbit | slash
+                    (abstract cover shown until the real
+                    TikTok thumbnail loads)
    ========================================================= */
 
+const PROFILE = { handle: 'dwsy.ae', followers: '89K', likes: '13M' };
+
 const WORKS = [
-  { id: '7586310218464709905', views: '4.4M', title: 'Cipher',         x: 5,  y: 1,  w: '17vw', depth: 1.25, rot: -4, motif: 'orbit' },
-  { id: '7640469041202646279', views: '2.8M', title: 'Yao Guang',      x: 64, y: 4,  w: '14vw', depth: 0.8,  rot: 5,  motif: 'rings' },
-  { id: '7559975497275313429', views: '2.2M', title: 'Columbina',      x: 36, y: 15, w: '13vw', depth: 1.45, rot: -2, motif: 'wave' },
-  { id: '7564440841075510549', views: '2.1M', title: 'Yuzuha & Alice', x: 79, y: 29, w: '14vw', depth: 1.0,  rot: 3,  motif: 'bars' },
-  { id: '7642281532786281746', views: '2.6M', title: 'Yao Guang',      x: 15, y: 39, w: '14vw', depth: 0.7,  rot: 6,  motif: 'slash' },
-  { id: '7643773142816541959', views: '1.4M', title: 'Sparxie',        x: 50, y: 46, w: '15vw', depth: 1.3,  rot: -5, motif: 'grid' },
-  { id: '7684325993682570516', views: '1.2M', title: 'Yao Guang',      x: 6,  y: 70, w: '13vw', depth: 1.1,  rot: -3, motif: 'wave' },
-  { id: '7686113100944166165', views: null,   title: 'Latest Edit',    x: 67, y: 71, w: '15vw', depth: 0.9,  rot: -4, motif: 'orbit' },
+  { id: '7586310218464709905', views: '4.4M', likes: '712K', title: 'Cipher',                        motif: 'orbit' },
+  { id: '7640469041202646279', views: '2.8M', likes: '397K', title: 'Yao Guang',                     motif: 'rings' },
+  { id: '7642281532786281746', views: '2.6M', likes: '358K', title: 'Yao Guang',                     motif: 'slash' },
+  { id: '7559975497275313429', views: '2.2M', likes: '284K', title: 'Columbina',                     motif: 'wave' },
+  { id: '7564440841075510549', views: '2.1M', likes: '245K', title: 'Yuzuha & Alice',                motif: 'bars' },
+  { id: '7591881806903823617', views: '1.7M', likes: '228K', title: 'Columbina & Sandrone',          motif: 'grid' },
+  { id: '7609362121301724417', views: '1.9M', likes: '215K', title: 'Sparkle / Yao Guang / Sparxie', motif: 'wave' },
+  { id: '7569651622855347477', views: '1.6M', likes: '186K', title: 'Burnice',                       motif: 'orbit' },
 ];
 
-const HANDLE = 'dwsy.ae';
-const videoUrl = (id) => `https://www.tiktok.com/@${HANDLE}/video/${id}`;
+/* vertical rhythm of the row (in % of card media height) and base tilt */
+const OFFSETS = [-6, 7, -3, 9, -8, 4, -5, 6];
+const TILTS = [-1.2, 0.8, -0.5, 1.1, -0.9, 0.6, -0.7, 1];
+
+const videoUrl = (id) => `https://www.tiktok.com/@${PROFILE.handle}/video/${id}`;
 const embedUrl = (id) => `https://www.tiktok.com/embed/v2/${id}?lang=en-US`;
 
 /* ---------- helpers ---------- */
@@ -35,21 +37,24 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const pad = (n) => String(n).padStart(2, '0');
-const num = (views) => (views ? parseFloat(views) : 0);
+/* "4.4M" → 4400000, "712K" → 712000 */
+const toNum = (s) => (s ? parseFloat(s) * ({ K: 1e3, M: 1e6 }[s.slice(-1).toUpperCase()] || 1) : 0);
+const fmt = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1e3)}K`);
 
 const mqMobile = matchMedia('(max-width: 760px)');
 const mqFinePointer = matchMedia('(hover: hover) and (pointer: fine)');
 const mqReduced = matchMedia('(prefers-reduced-motion: reduce)');
 
-/* deterministic pseudo-random per card so motifs stay stable */
 function seeded(seed) {
   let s = 0;
   for (const c of seed) s = (s * 31 + c.charCodeAt(0)) >>> 0;
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
-const TOTAL = WORKS.reduce((sum, w) => sum + num(w.views), 0);
-const TOP = WORKS.reduce((a, b) => (num(b.views) > num(a.views) ? b : a));
+const TOTAL_VIEWS = WORKS.reduce((sum, w) => sum + toNum(w.views), 0);
+const TOTAL_LIKES = WORKS.reduce((sum, w) => sum + toNum(w.likes), 0);
+const TOP = WORKS.reduce((a, b) => (toNum(b.views) > toNum(a.views) ? b : a));
+const share = (w) => (toNum(w.views) / toNum(TOP.views)).toFixed(3);
 
 /* =========================================================
    Generative motifs (thin-line SVGs, use currentColor)
@@ -123,41 +128,34 @@ function motifSVG(work, i) {
   const r = seeded(work.id + i);
   const body = (MOTIFS[work.motif] || MOTIFS.rings)(r);
   return `<svg class="card__motif" viewBox="0 0 100 178" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
-      fill="none" stroke="currentColor" stroke-width="0.3" style="--motif-rot:${(r() * 6 - 3).toFixed(1)}deg">
+      fill="none" stroke="currentColor" stroke-width="0.3">
       <style>.fill{fill:currentColor;stroke:none}.fill-accent{fill:var(--accent);stroke:none}.fill-bg{fill:var(--card-bg);stroke:currentColor}</style>
       ${body}
     </svg>`;
 }
 
 /* =========================================================
-   Render cards, index list, marquee, totals
+   Render
    ========================================================= */
-const field = $('[data-works]');
+const cardsEl = $('[data-works]');
 const indexList = $('[data-index-list]');
 
-function viewsHTML(w) {
-  return w.views
-    ? `<span data-count-to="${num(w.views)}">0.0</span>M<small>views</small>`
-    : `New<small>drop</small>`;
-}
-
 function renderCards() {
-  field.innerHTML = WORKS.map((w, i) => `
-    <button class="card" type="button" data-index="${i}"
-      style="--x:${w.x};--y:${w.y};--w:${w.w};--z:${Math.round(w.depth * 10)};--dim:${(0.72 + 0.28 * Math.min(w.depth, 1)).toFixed(2)};--share:${(num(w.views) / num(TOP.views)).toFixed(3)}"
-      aria-label="Play ${w.title}${w.views ? `, ${w.views} views` : ''}">
+  cardsEl.innerHTML = WORKS.map((w, i) => `
+    <button class="card" type="button" data-index="${i}" style="--share:${share(w)}"
+      aria-label="Play ${w.title}, ${w.views} views, ${w.likes} likes">
       <span class="card__inner">
         <span class="card__media">
           <img class="card__thumb" alt="" decoding="async">
           ${motifSVG(w, i)}
-          <span class="card__sweep"></span>
           <span class="card__top">
             <span class="mono">${pad(i + 1)}</span>
             <span class="card__play" aria-hidden="true">▶</span>
           </span>
         </span>
         <span class="card__meta">
-          <span class="card__views">${viewsHTML(w)}</span>
+          <span class="card__views"><span data-count-to="${parseFloat(w.views)}">0.0</span>M<small>views</small></span>
+          <span class="card__likes">${w.likes}<small>likes</small></span>
           <span class="card__title"><span>${w.title}</span><span class="mono">TikTok</span></span>
           <span class="card__bar"></span>
         </span>
@@ -168,52 +166,57 @@ function renderCards() {
 function renderIndex() {
   indexList.innerHTML = WORKS.map((w, i) => `
     <li>
-      <button class="works__row" type="button" data-index="${i}" style="--share:${(num(w.views) / num(TOP.views)).toFixed(3)}">
+      <button class="works__row" type="button" data-index="${i}" style="--share:${share(w)}">
         <span class="mono muted">${pad(i + 1)}</span>
         <span class="works__row-title">${w.title}</span>
-        <span class="works__row-views">${w.views || 'New'}</span>
+        <span class="works__row-views">${w.views}</span>
+        <span class="works__row-likes">${w.likes}</span>
         <span class="works__row-share"></span>
       </button>
     </li>`).join('');
 
-  const viewed = WORKS.filter((w) => w.views);
   $('[data-summary]').innerHTML = [
-    `Total <b>${TOTAL.toFixed(1)}M</b>`,
-    `Average <b>${(TOTAL / viewed.length).toFixed(1)}M</b>`,
+    `Views <b>${fmt(TOTAL_VIEWS)}</b>`,
+    `Likes <b>${fmt(TOTAL_LIKES)}</b>`,
+    `Average <b>${fmt(TOTAL_VIEWS / WORKS.length)}</b>`,
     `Top <b>${TOP.views} — ${TOP.title}</b>`,
-    `Edits <b>${WORKS.length}</b>`,
   ].map((s) => `<span>${s}</span>`).join('');
 }
 
 function renderMarquee() {
-  const words = ['Motion', 'Music', 'Edits', 'Mood', `${Math.floor(TOTAL)}M+ views`, '@dwsy.ae'];
+  const words = ['Motion', 'Music', 'Edits', 'Mood', `${PROFILE.followers} followers`, `${PROFILE.likes} likes`, `@${PROFILE.handle}`];
   const set = words.map((w) => `<span class="marquee__item">${w}<i class="marquee__sep"></i></span>`).join('');
-  $('[data-marquee]').innerHTML = set.repeat(4); // enough to loop seamlessly
+  $('[data-marquee]').innerHTML = set.repeat(3);
 }
 
 function fillTotals() {
-  $$('[data-total-views]').forEach((el) => (el.textContent = `${Math.floor(TOTAL)}M+`));
-  $$('[data-top-views]').forEach((el) => (el.textContent = TOP.views));
-  $$('[data-work-count]').forEach((el) => (el.textContent = WORKS.length));
-  $$('[data-year]').forEach((el) => (el.textContent = new Date().getFullYear()));
+  const set = (sel, v) => $$(sel).forEach((el) => (el.textContent = v));
+  set('[data-total-views]', fmt(TOTAL_VIEWS));
+  set('[data-total-likes]', fmt(TOTAL_LIKES));
+  set('[data-top-views]', TOP.views);
+  set('[data-work-count]', pad(WORKS.length));
+  set('[data-followers]', PROFILE.followers);
+  set('[data-profile-likes]', PROFILE.likes);
+  set('[data-year]', new Date().getFullYear());
 }
 
-/* Progressive enhancement: real thumbnails via TikTok oEmbed.
-   The card's media box adopts the thumbnail's exact aspect ratio,
-   so the preview is shown whole (object-fit: contain, no crop). */
+/* Real thumbnails via TikTok oEmbed. Each card's media box takes the
+   thumbnail's exact aspect ratio, so the preview is never cropped. */
 function loadThumbnails() {
   WORKS.forEach((work, i) => {
     fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl(work.id))}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
         if (!data.thumbnail_url) return;
-        const card = $(`.card[data-index="${i}"]`, field);
+        const card = $(`.card[data-index="${i}"]`, cardsEl);
         const img = $('.card__thumb', card);
         img.onload = () => {
           work.ar = img.naturalWidth / img.naturalHeight;
-          $('.card__media', card).style.setProperty('--ar', `${img.naturalWidth} / ${img.naturalHeight}`);
+          const media = $('.card__media', card);
+          media.style.setProperty('--ar', `${img.naturalWidth} / ${img.naturalHeight}`);
+          media.style.setProperty('--arn', work.ar.toFixed(4));
           img.classList.add('is-loaded');
-          measure();
+          scheduleLayout();
         };
         img.src = data.thumbnail_url;
         work.thumb = data.thumbnail_url;
@@ -223,123 +226,168 @@ function loadThumbnails() {
 }
 
 /* =========================================================
-   Motion engine — one rAF loop for everything
+   Horizontal works scroller
+   ---------------------------------------------------------
+   The section is made as tall as the track is wide. While the
+   page scrolls through it the stage stays pinned (CSS sticky)
+   and the vertical progress moves the track horizontally.
+   All layout is measured once (on resize / image load); the
+   per-frame work is transforms only.
    ========================================================= */
-const state = {
-  mouse: { x: 0, y: 0, tx: 0, ty: 0, px: innerWidth / 2, py: innerHeight / 2 },
-  scroll: { y: scrollY, last: scrollY, vel: 0 },
-  vh: innerHeight,
-  cards: [],
-  marqueeX: 0,
-  start: performance.now(),
-};
+const scroller = $('[data-scroller]');
+const track = $('[data-track]');
+const bgword = $('[data-bgword]');
+const worksProgress = $('[data-works-progress]');
+const currentEl = $('[data-current]');
 
-const heroMasks = $$('.hero__mask');
-const heroEl = $('.hero');
-const orbits = $('.hero__orbits');
-const marquee = $('[data-marquee]');
-const badge = $('[data-badge]');
-const glow = $('.glow');
-const progressBar = $('.progress__bar');
-const timecodeEl = $('[data-timecode]');
-const coordsEl = $('[data-coords]');
+const hx = { on: false, top: 0, dist: 0, x: 0, vel: 0, cards: [], current: -1, mediaH: 0 };
 
-function measure() {
-  state.vh = innerHeight;
-  const fieldTop = field.getBoundingClientRect().top + scrollY;
-  state.cards = $$('.card', field).map((el, i) => {
-    const w = WORKS[i];
-    return {
+function layout() {
+  hx.on = !mqMobile.matches;
+  const cards = $$('.card', cardsEl);
+  if (!hx.on) {
+    scroller.style.height = '';
+    track.style.transform = '';
+    cards.forEach((c) => (c.style.transform = ''));
+    hx.cards = [];
+  } else {
+    hx.dist = Math.max(0, track.scrollWidth - innerWidth);
+    scroller.style.height = `${hx.dist + innerHeight}px`;
+    hx.top = scroller.getBoundingClientRect().top + scrollY;
+    hx.mediaH = cards[0] ? $('.card__media', cards[0]).offsetHeight : 0;
+    hx.cards = cards.map((el, i) => ({
       el,
-      center: fieldTop + el.offsetTop + el.offsetHeight / 2,
-      depth: w.depth,
-      rot: w.rot,
-      phase: i * 1.7,
-      speed: 0.8 + (i % 4) * 0.15,
-      dir: i % 2 ? 1 : -1,
-    };
-  });
+      center: el.offsetLeft + el.offsetWidth / 2,
+      oy: (OFFSETS[i % OFFSETS.length] / 100) * hx.mediaH,
+      tilt: TILTS[i % TILTS.length],
+      phase: i * 1.3,
+    }));
+  }
   state.docH = document.documentElement.scrollHeight - innerHeight;
 }
 
-function tick(t) {
-  const { mouse, scroll, vh } = state;
-  const mobile = mqMobile.matches;
-  const reduced = mqReduced.matches;
-  const amp = reduced ? 0 : mobile ? 0.4 : 1;
+let layoutQueued = false;
+function scheduleLayout() {
+  if (layoutQueued) return;
+  layoutQueued = true;
+  requestAnimationFrame(() => { layoutQueued = false; layout(); });
+}
 
-  // smooth mouse + scroll velocity
-  mouse.x = lerp(mouse.x, mouse.tx, 0.07);
-  mouse.y = lerp(mouse.y, mouse.ty, 0.07);
-  scroll.y = scrollY;
-  scroll.vel = lerp(scroll.vel, scroll.y - scroll.last, 0.12);
-  scroll.last = scroll.y;
+function updateWorks(t) {
+  if (!hx.on) return;
+  const vw = innerWidth;
+  const local = scrollY - hx.top;
+  if (local < -innerHeight || local > hx.dist + innerHeight) return; // off-screen
+
+  const target = clamp(local, 0, hx.dist);
+  const prev = hx.x;
+  hx.x = Math.abs(target - hx.x) < 0.1 ? target : lerp(hx.x, target, 0.12);
+  hx.vel = lerp(hx.vel, hx.x - prev, 0.25);
+  const reduced = mqReduced.matches;
+  const v = reduced ? 0 : clamp(hx.vel, -60, 60);
+
+  track.style.transform = `translate3d(${(-hx.x).toFixed(2)}px,0,0)`;
+  bgword.style.transform = `translate3d(${(vw * 0.1 - hx.x * 0.35).toFixed(2)}px,0,0)`;
+  worksProgress.style.transform = `scaleX(${(hx.dist ? hx.x / hx.dist : 0).toFixed(4)})`;
+
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < hx.cards.length; i++) {
+    const c = hx.cards[i];
+    const sx = c.center - hx.x;
+    const d = Math.abs(sx - vw / 2);
+    if (d < bestD) { bestD = d; best = i; }
+    if (sx < -vw * 0.5 || sx > vw * 1.5) continue;          // outside view: skip
+
+    const rel = (sx - vw / 2) / vw;                          // -0.5 … 0.5 on screen
+    const float = reduced ? 0 : Math.sin(t * 0.0009 + c.phase) * 5;
+    const ty = c.oy + rel * rel * 70 + float + state.mouse.y * 8;
+    const rz = c.tilt + rel * 5 + v * 0.06;
+    const sk = clamp(-v * 0.1, -6, 6);
+    c.el.style.transform =
+      `translate3d(${(state.mouse.x * 10).toFixed(2)}px,${ty.toFixed(2)}px,0) rotate(${rz.toFixed(2)}deg) skewX(${sk.toFixed(2)}deg)`;
+  }
+  if (best !== hx.current) {
+    hx.current = best;
+    currentEl.textContent = pad(best + 1);
+  }
+}
+
+/* trackpads: a sideways swipe over the stage scrolls the page too */
+function bindWorksInput() {
+  $('.works__pin').addEventListener('wheel', (e) => {
+    if (!hx.on || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    const local = scrollY - hx.top;
+    if (local < 0 || local > hx.dist) return;
+    e.preventDefault();
+    scrollBy(0, e.deltaX);
+  }, { passive: false });
+
+  /* keyboard: bring a focused card into view */
+  cardsEl.addEventListener('focusin', (e) => {
+    const card = e.target.closest('.card');
+    if (!card || !hx.on) return;
+    const c = hx.cards[+card.dataset.index];
+    scrollTo({ top: hx.top + clamp(c.center - innerWidth / 2, 0, hx.dist), behavior: 'auto' });
+  });
+}
+
+/* =========================================================
+   Global motion loop (hero, marquee, cursor, progress)
+   ========================================================= */
+const state = {
+  mouse: { x: 0, y: 0, tx: 0, ty: 0 },
+  scroll: { last: scrollY, vel: 0 },
+  marqueeX: 0,
+  marqueeDir: 1,
+  start: performance.now(),
+  docH: 1,
+};
+
+const heroMasks = $$('.hero__mask');
+const orbits = $('.hero__orbits');
+const marquee = $('[data-marquee]');
+const progressBar = $('.progress__bar');
+const timecodeEl = $('[data-timecode]');
+
+function tick(t) {
+  const { mouse, scroll } = state;
+  const y = scrollY;
+  const vh = innerHeight;
+  const reduced = mqReduced.matches;
+  const amp = reduced ? 0 : mqMobile.matches ? 0.5 : 1;
+
+  mouse.x = lerp(mouse.x, mouse.tx, 0.08);
+  mouse.y = lerp(mouse.y, mouse.ty, 0.08);
+  scroll.vel = lerp(scroll.vel, y - scroll.last, 0.15);
+  scroll.last = y;
   const vel = clamp(scroll.vel, -80, 80);
 
-  /* floating cards */
-  const viewCenter = scroll.y + vh / 2;
-  for (const c of state.cards) {
-    const rel = (c.center - viewCenter) / vh;   // 0 when card is centred
-    if (Math.abs(rel) > 1.7) continue;          // off-screen: skip work
-
-    const d = c.depth;
-    const time = t * 0.001 * c.speed + c.phase;
-
-    const fx = Math.cos(time * 0.7) * 9 * amp;
-    const fy = Math.sin(time) * 14 * amp;
-    const px = mouse.x * d * 46 * amp;
-    const py = mouse.y * d * 30 * amp;
-    const ty = rel * (d - 1) * 320 * amp;      // depth parallax
-    const sy = -vel * d * 0.9 * amp;            // lag behind fast scroll
-
-    const rz = c.rot * (mobile ? 0.45 : 1) * (reduced ? 0.5 : 1)
-             + Math.sin(time * 0.6) * 1.6 * amp
-             + rel * 6 * c.dir * amp
-             + vel * 0.07 * d * c.dir * amp;
-    const ry = mouse.x * 14 * d * amp;
-    const rx = -mouse.y * 10 * d * amp + vel * 0.12 * amp;
-    const sc = 1 + (1 - Math.min(Math.abs(rel), 1)) * 0.03 * d * amp; // swell near centre
-
-    c.el.style.transform =
-      `translate3d(${(fx + px).toFixed(2)}px, ${(fy + py + ty + sy).toFixed(2)}px, 0) ` +
-      `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${sc.toFixed(4)})`;
-  }
-
-  /* hero: letters drift at different depths, orbits counter-move */
-  if (scroll.y < vh * 1.2) {
-    const k = amp * (mobile ? 0.5 : 1);
+  /* hero: letters drift at different depths */
+  if (y < vh * 1.1) {
     heroMasks.forEach((m, i) => {
       const depth = (i - 2) * 0.6 + 1;
       m.style.transform =
-        `translate3d(${(mouse.x * depth * 14 * k).toFixed(2)}px, ${(mouse.y * depth * 8 * k - scroll.y * 0.08 * i * k).toFixed(2)}px, 0)`;
+        `translate3d(${(mouse.x * depth * 14 * amp).toFixed(2)}px,${(mouse.y * depth * 8 * amp - y * 0.06 * i * amp).toFixed(2)}px,0)`;
     });
-    orbits.style.translate = `${(-mouse.x * 24 * k).toFixed(1)}px ${(-mouse.y * 24 * k + scroll.y * 0.25).toFixed(1)}px`;
-    if (coordsEl) coordsEl.textContent = `X ${((mouse.tx + 1) / 2).toFixed(2)} / Y ${((mouse.ty + 1) / 2).toFixed(2)}`;
-    if (timecodeEl) {
-      const f = Math.floor((t - state.start) / (1000 / 24));
-      const s = Math.floor(f / 24);
-      timecodeEl.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}:${pad(f % 24)}`;
-    }
+    orbits.style.translate = `${(-mouse.x * 24 * amp).toFixed(1)}px ${(-mouse.y * 24 * amp + y * 0.25).toFixed(1)}px`;
+    const f = Math.floor((t - state.start) / (1000 / 24));
+    const s = Math.floor(f / 24);
+    timecodeEl.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}:${pad(f % 24)}`;
   }
 
-  /* marquee: base drift + scroll velocity, direction follows scroll */
-  if (marquee && !reduced) {
-    const half = marquee.scrollWidth / 2;
-    state.marqueeDir = vel > 0.5 ? 1 : vel < -0.5 ? -1 : state.marqueeDir || 1;
-    state.marqueeX -= (0.6 + Math.abs(vel) * 0.35) * state.marqueeDir;
+  /* marquee: drift + scroll velocity, only while near the viewport */
+  if (!reduced && y < vh * 2.2) {
+    const half = marquee.scrollWidth / 3;
+    if (vel > 0.5) state.marqueeDir = 1;
+    else if (vel < -0.5) state.marqueeDir = -1;
+    state.marqueeX -= (0.6 + Math.abs(vel) * 0.3) * state.marqueeDir;
     if (state.marqueeX <= -half) state.marqueeX += half;
     if (state.marqueeX > 0) state.marqueeX -= half;
-    marquee.style.transform = `translate3d(${state.marqueeX.toFixed(2)}px,0,0) skewX(${clamp(-vel * 0.15, -12, 12).toFixed(2)}deg)`;
+    marquee.style.transform = `translate3d(${state.marqueeX.toFixed(2)}px,0,0)`;
   }
 
-  /* rotating badge */
-  if (badge && !reduced) badge.style.transform = `rotate(${(scroll.y * 0.12 + t * 0.008).toFixed(2)}deg)`;
-
-  /* ambient glow + progress */
-  if (!reduced) glow.style.transform = `translate3d(${(lerp(innerWidth / 2, mouse.px, 0.6)).toFixed(1)}px, ${(lerp(innerHeight / 2, mouse.py, 0.6)).toFixed(1)}px, 0)`;
-  progressBar.style.transform = `scaleY(${clamp(scroll.y / (state.docH || 1), 0, 1).toFixed(4)})`;
-
-  updateAboutWords();
+  updateWorks(t);
+  progressBar.style.transform = `scaleY(${clamp(y / state.docH, 0, 1).toFixed(4)})`;
   updateCursor();
   updatePreview();
   requestAnimationFrame(tick);
@@ -348,30 +396,17 @@ function tick(t) {
 addEventListener('pointermove', (e) => {
   state.mouse.tx = (e.clientX / innerWidth) * 2 - 1;
   state.mouse.ty = (e.clientY / innerHeight) * 2 - 1;
-  state.mouse.px = lerp(state.mouse.px, e.clientX, 0.08);
-  state.mouse.py = lerp(state.mouse.py, e.clientY, 0.08);
   cursor.tx = e.clientX;
   cursor.ty = e.clientY;
 }, { passive: true });
 
-/* Subtle 3D tilt on the hovered card, focus mode for the rest */
+/* =========================================================
+   Cards: focus mode, click, entrances
+   ========================================================= */
 function bindCards() {
-  $$('.card', field).forEach((card) => {
-    const inner = $('.card__inner', card);
-    card.addEventListener('pointerenter', () => field.classList.add('has-focus'));
-    card.addEventListener('pointermove', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - 0.5;
-      const y = (e.clientY - r.top) / r.height - 0.5;
-      inner.style.setProperty('--ry', `${(x * 12).toFixed(2)}deg`);
-      inner.style.setProperty('--rx', `${(-y * 12).toFixed(2)}deg`);
-    });
-    card.addEventListener('pointerleave', () => {
-      field.classList.remove('has-focus');
-      inner.style.setProperty('--ry', '0deg');
-      inner.style.setProperty('--rx', '0deg');
-    });
+  $$('.card', cardsEl).forEach((card) => {
+    card.addEventListener('pointerenter', () => cardsEl.classList.add('has-focus'));
+    card.addEventListener('pointerleave', () => cardsEl.classList.remove('has-focus'));
     card.addEventListener('click', () => openModal(+card.dataset.index, card));
   });
   $$('.works__row', indexList).forEach((row) => {
@@ -381,38 +416,33 @@ function bindCards() {
   });
 }
 
-/* Count a number up from 0 */
-function countUp(el, to, dur = 1600) {
+function countUp(el, to, dur = 1400) {
   const start = performance.now();
   const step = (now) => {
     const p = clamp((now - start) / dur, 0, 1);
-    const e = 1 - Math.pow(1 - p, 4);
-    el.textContent = (to * e).toFixed(1);
+    el.textContent = (to * (1 - Math.pow(1 - p, 4))).toFixed(1);
     if (p < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 }
 
-/* Cards wipe in as they enter the viewport, numbers count up */
 function observeEntrances() {
   const reveal = (el) => {
     el.classList.add('is-in');
     $$('[data-count-to]', el).forEach((n) =>
       mqReduced.matches ? (n.textContent = (+n.dataset.countTo).toFixed(1)) : countUp(n, +n.dataset.countTo));
   };
-  if (!('IntersectionObserver' in window)) return $$('.card', field).forEach(reveal);
+  if (!('IntersectionObserver' in window)) return $$('.card', cardsEl).forEach(reveal);
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => {
-      if (e.isIntersecting) {
-        setTimeout(() => reveal(e.target), 80 * (+e.target.dataset.index % 3));
-        io.unobserve(e.target);
-      }
+      if (!e.isIntersecting) return;
+      reveal(e.target);
+      io.unobserve(e.target);
     });
-  }, { rootMargin: '0px 0px -10% 0px' });
-  $$('.card', field).forEach((c) => io.observe(c));
+  }, { rootMargin: '0px -4% 0px -4%', threshold: 0.15 });
+  $$('.card', cardsEl).forEach((c) => io.observe(c));
 }
 
-/* Nav: highlight the section in view */
 function observeSections() {
   const links = $$('.nav__links a');
   const io = new IntersectionObserver((entries) => {
@@ -424,34 +454,23 @@ function observeSections() {
   ['works', 'about', 'links'].forEach((id) => io.observe(document.getElementById(id)));
 }
 
-/* Local time in the hero */
 function startClock() {
   const el = $('[data-local-time]');
-  const fmt = () => (el.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
-  fmt();
-  setInterval(fmt, 15000);
+  const show = () => (el.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+  show();
+  setInterval(show, 15000);
 }
 
-/* =========================================================
-   About — words light up as you scroll
-   ========================================================= */
-const statement = $('[data-reveal-words]');
-let words = [];
-function splitWords() {
-  statement.innerHTML = statement.textContent
-    .trim()
-    .split(/\s+/)
-    .map((w) => `<span class="w">${w}</span>`)
-    .join(' ');
-  words = $$('.w', statement);
-}
-function updateAboutWords() {
-  const r = statement.getBoundingClientRect();
-  if (r.bottom < -200 || r.top > state.vh + 200) return;
-  const line = state.vh * 0.8;
-  for (const w of words) {
-    w.classList.toggle('is-lit', w.getBoundingClientRect().top < line);
-  }
+/* About: words light up as they cross the lower part of the screen
+   (IntersectionObserver — no per-frame layout reads) */
+function revealWords() {
+  const statement = $('[data-reveal-words]');
+  statement.innerHTML = statement.textContent.trim().split(/\s+/)
+    .map((w) => `<span class="w">${w}</span>`).join(' ');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => e.target.classList.toggle('is-lit', e.isIntersecting || e.boundingClientRect.top < 0));
+  }, { rootMargin: '0px 0px -22% 0px' });
+  $$('.w', statement).forEach((w) => io.observe(w));
 }
 
 /* =========================================================
@@ -475,32 +494,31 @@ function initCursor() {
 }
 function updateCursor() {
   if (!cursor.on) return;
-  cursor.x = lerp(cursor.x, cursor.tx, 0.22);
-  cursor.y = lerp(cursor.y, cursor.ty, 0.22);
-  cursorEl.style.transform = `translate3d(${cursor.x}px, ${cursor.y}px, 0)`;
+  cursor.x = lerp(cursor.x, cursor.tx, 0.25);
+  cursor.y = lerp(cursor.y, cursor.ty, 0.25);
+  cursorEl.style.transform = `translate3d(${cursor.x.toFixed(1)}px,${cursor.y.toFixed(1)}px,0)`;
 }
 
 const previewEl = $('.index-preview');
 const previewImg = $('img', previewEl);
-const preview = { work: null, x: 0, y: 0 };
+const preview = { work: null, x: 0, y: 0, shown: false };
 function updatePreview() {
   const on = !!(preview.work && preview.work.thumb && cursor.on);
-  previewEl.classList.toggle('is-on', on);
+  if (on !== preview.shown) { previewEl.classList.toggle('is-on', on); preview.shown = on; }
   if (!on) return;
-  if (previewImg.src !== preview.work.thumb) previewImg.src = preview.work.thumb;
+  if (previewImg.getAttribute('src') !== preview.work.thumb) previewImg.src = preview.work.thumb;
   preview.x = lerp(preview.x, cursor.tx + 40, 0.15);
   preview.y = lerp(preview.y, cursor.ty - 120, 0.15);
-  previewEl.style.transform = `translate3d(${preview.x}px, ${preview.y}px, 0) rotate(${clamp(state.scroll.vel * 0.3 + (cursor.tx - preview.x + 40) * 0.05, -8, 8).toFixed(2)}deg)`;
+  previewEl.style.transform = `translate3d(${preview.x.toFixed(1)}px,${preview.y.toFixed(1)}px,0)`;
 }
 
 /* =========================================================
    Modal with TikTok embed/v2 player
    ---------------------------------------------------------
-   embed/v2 renders a TikTok card: the video at its own aspect
-   ratio plus a caption footer. We give the iframe that card's
-   full height (≈ width / aspect + footer, refined by the height
-   TikTok reports via postMessage) and scale it to fit the
-   screen, so nothing is cropped.
+   embed/v2 renders the video at its own aspect ratio plus a
+   caption footer. The iframe gets that full height (from the
+   video aspect, refined by the height TikTok reports through
+   postMessage) and is scaled down to fit — never cropped.
    ========================================================= */
 const modal = $('.modal');
 const player = $('.modal__player', modal);
@@ -512,11 +530,6 @@ let current = -1;
 let lastFocus = null;
 let closeTimer = null;
 let embedH = 0;
-
-function defaultEmbedHeight(work) {
-  const ar = work.ar || 9 / 16;
-  return Math.round(EMBED_W / ar + EMBED_FOOTER);
-}
 
 function fitPlayer() {
   const mobile = mqMobile.matches;
@@ -530,10 +543,8 @@ function fitPlayer() {
   player.style.setProperty('--ph', `${Math.round(embedH * s)}px`);
 }
 
-/* TikTok's embed posts its rendered height; accept any message from
-   the player frame that carries a sensible numeric height. */
 addEventListener('message', (e) => {
-  if (e.source !== frame.contentWindow || !/tiktok\.com$/.test(new URL(e.origin).hostname)) return;
+  if (e.source !== frame.contentWindow || !/(^|\.)tiktok\.com$/.test(e.origin.replace(/^https?:\/\//, ''))) return;
   let data = e.data;
   if (typeof data === 'string') { try { data = JSON.parse(data); } catch { return; } }
   const find = (o, depth = 0) => {
@@ -551,10 +562,10 @@ function fillModal(i) {
   current = i;
   $('.modal__no', modal).textContent = `${pad(i + 1)} / ${pad(WORKS.length)}`;
   $('.modal__title', modal).textContent = w.title;
-  $('.modal__views-value', modal).textContent = w.views || 'New';
-  $('.modal__views .mono', modal).textContent = w.views ? 'views' : 'latest drop';
+  $('.modal__views-value', modal).textContent = w.views;
+  $('.modal__likes', modal).textContent = `${w.likes} likes`;
   $('.modal__cta', modal).href = videoUrl(w.id);
-  embedH = defaultEmbedHeight(w);
+  embedH = Math.round(EMBED_W / (w.ar || 9 / 16) + EMBED_FOOTER);
   fitPlayer();
   loader.hidden = false;
   frame.src = embedUrl(w.id);
@@ -600,7 +611,6 @@ function bindModal() {
     if (e.key === 'ArrowLeft') step(-1);
     if (e.key === 'ArrowRight') step(1);
     if (e.key === 'Tab') {
-      // simple focus trap
       const f = $$('a[href], button, iframe', modal).filter((el) => el.offsetParent !== null);
       const first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -631,18 +641,19 @@ renderCards();
 renderIndex();
 renderMarquee();
 fillTotals();
-splitWords();
+revealWords();
 bindCards();
+bindWorksInput();
 observeEntrances();
 observeSections();
 startClock();
 initCursor();
 bindModal();
 bindTheme();
-measure();
+layout();
 loadThumbnails();
 
-addEventListener('resize', measure);
-addEventListener('load', measure);
-if (document.fonts) document.fonts.ready.then(measure);
+addEventListener('resize', scheduleLayout);
+addEventListener('load', scheduleLayout);
+if (document.fonts) document.fonts.ready.then(scheduleLayout);
 requestAnimationFrame(tick);

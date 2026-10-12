@@ -1,20 +1,18 @@
 # dwsy. — portfolio
 
 One-page portfolio for TikTok creator **dwsy** ([@dwsy.ae](https://www.tiktok.com/@dwsy.ae)).
-Dark, cinematic "floating gallery": video cards drift, tilt and react to scroll and cursor;
-clicking a card opens the TikTok player in a modal.
+Dark, minimal, cinematic. The Selected Works section is a pinned horizontal scroller: the mouse wheel
+(or trackpad) moves the row of video cards sideways; clicking a card opens the TikTok player in a modal.
 
 Plain HTML + CSS + vanilla JS, no build step.
 
 ```
-index.html      structure (hero, works, about, links, footer, modal)
+index.html      structure (hero, marquee, works, about, links, footer, modal)
 css/styles.css  tokens/themes at the top, then one block per section
-js/main.js      WORKS data, card rendering, motion loop, modal, theme toggle
+js/main.js      PROFILE + WORKS data, rendering, horizontal scroller, modal, theme toggle
 ```
 
 ## Run locally
-
-Open `index.html` directly, or serve the folder (recommended so the TikTok thumbnail fetch works):
 
 ```
 python3 -m http.server 8000
@@ -22,16 +20,21 @@ python3 -m http.server 8000
 
 ## Editing
 
-- **Videos / views / titles / card positions** — edit the `WORKS` array at the top of `js/main.js`.
-  `x`/`y` are percentages inside the gallery field, `w` is card width, `depth` (0.5–1.5) controls
-  parallax strength and stacking, `rot` is base rotation, `motif` picks the abstract cover
-  (`rings`, `bars`, `wave`, `grid`, `orbit`, `slash`). A card with `views: null` shows "New". Totals, averages and the index list are computed from this array.
+- **Videos / numbers** — the `WORKS` array at the top of `js/main.js` (`views`, `likes`, `title`, `motif`).
+  Totals, averages and the index list are computed from it.
+- **Profile numbers** — `PROFILE` in `js/main.js` (followers, likes).
+- **Row rhythm** — `OFFSETS` (vertical offset per card) and `TILTS` (base rotation) in `js/main.js`.
+- **Card size** — `--mh` on `.card` in `css/styles.css` (media height; width follows each video's aspect).
 - **Colours** — CSS variables in `:root` (dark) and `:root[data-theme="light"]`.
-- **Player** — the modal embeds `https://www.tiktok.com/embed/v2/VIDEO_ID` in an iframe (`embedUrl` in `js/main.js`).
-- **Thumbnails** — fetched from TikTok oEmbed; each card's media box takes the thumbnail's own aspect
-  ratio (no cropping). Until it loads, the generative motif is shown.
-- **Player size** — the iframe gets the embed's full height (video aspect + caption footer, refined by
-  the height TikTok reports) and is scaled to fit the screen, so it is never cropped.
 
-On screens ≤ 760px the free composition becomes a staggered two-column layout with gentler motion.
-`prefers-reduced-motion` disables floating and parallax.
+## How it works
+
+- **Horizontal scroll** — `.works__scroller` is made as tall as the track is wide; `.works__pin` is
+  `position: sticky`, and the vertical scroll progress is turned into a `translate3d` of the track
+  (smoothed for a little inertia, with velocity-based tilt/skew). Layout is measured only on resize and
+  image load; each frame only writes transforms. On phones (≤ 760px) it is a native swipe row with snap.
+- **Thumbnails** — fetched from TikTok oEmbed; each card's media box takes the thumbnail's own aspect
+  ratio with `object-fit: contain`, so nothing is cropped.
+- **Player** — `https://www.tiktok.com/embed/v2/VIDEO_ID` in an iframe sized to the embed's full height
+  (video aspect + caption footer, refined by the height TikTok reports) and scaled to fit the screen.
+- `prefers-reduced-motion` disables floating, skew and marquee motion.

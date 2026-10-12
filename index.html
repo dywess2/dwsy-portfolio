@@ -23,10 +23,9 @@
   </script>
 </head>
 <body>
-  <!-- Atmosphere: grain, layout guides, ambient glow, cursor, scroll progress -->
+  <!-- Atmosphere: grain, layout guides, cursor, scroll progress -->
   <div class="grain" aria-hidden="true"></div>
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-  <div class="glow" aria-hidden="true"></div>
   <div class="cursor" aria-hidden="true"><span class="cursor__label">Play</span></div>
   <div class="progress" aria-hidden="true"><span class="progress__bar"></span></div>
   <div class="index-preview" aria-hidden="true"><img alt=""></div>
@@ -65,7 +64,7 @@
       <div class="hero__meta hero__meta--tr">
         <span class="mono">Selected works</span>
         <span class="mono muted">2025 — 2026</span>
-        <span class="mono muted" data-coords>X 0.00 / Y 0.00</span>
+        <span class="mono muted">Local <span data-local-time>--:--</span></span>
       </div>
 
       <h1 class="hero__title" aria-label="dwsy.">
@@ -81,7 +80,7 @@
         <a href="#works" class="hero__scroll mono">
           <span class="hero__scroll-line"></span>Scroll
         </a>
-        <span class="mono muted"><span data-total-views>16M+</span> views · <span data-local-time>--:--</span></span>
+        <span class="mono muted"><span data-followers>89K</span> followers · <span data-profile-likes>13M</span> likes</span>
       </div>
     </section>
 
@@ -92,32 +91,48 @@
 
     <!-- ============ SELECTED WORKS ============ -->
     <section class="works" id="works" aria-labelledby="works-title">
-      <div class="works__backdrop" aria-hidden="true">
-        <div class="works__sticky">
-          <span class="works__kicker mono">( <span data-work-count>8</span> )</span>
-          <span class="works__big">Selected</span>
-          <span class="works__big works__big--outline">Works</span>
-          <svg class="works__badge" viewBox="0 0 200 200" data-badge>
-            <defs><path id="badge-circle" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
-            <text><textPath href="#badge-circle">SELECTED WORKS · 2025 — 2026 · DWSY · TIKTOK @DWSY.AE ·</textPath></text>
-            <circle cx="100" cy="100" r="3"/>
-          </svg>
+      <div class="works__scroller" data-scroller>
+      <div class="works__pin">
+        <div class="works__head">
+          <span class="mono">01 — Works</span>
+          <span class="mono works__counter"><span data-current>01</span> / <span data-work-count>08</span></span>
+          <span class="mono muted works__hint">Scroll <span class="works__hint-arrow">→</span></span>
+        </div>
+
+        <div class="works__bgword" aria-hidden="true" data-bgword>Selected Works · Selected Works · Selected Works</div>
+
+        <h2 id="works-title" class="visually-hidden">Selected Works</h2>
+        <!-- Track: intro panel, cards (generated from WORKS in js/main.js), outro panel -->
+        <div class="works__viewport">
+          <div class="works__track" data-track>
+            <div class="works__intro">
+              <span class="mono muted">( <span data-work-count>8</span> edits )</span>
+              <p class="works__intro-title">Selected<br><span class="outline">Works</span></p>
+              <p class="works__intro-text">
+                <span data-total-views>19.3M</span> views and <span data-total-likes>2.6M</span> likes
+                across eight character edits. Click any card to play.
+              </p>
+            </div>
+            <div class="works__cards" data-works></div>
+            <a class="works__outro" href="https://www.tiktok.com/@dwsy.ae" target="_blank" rel="noopener">
+              <span class="mono muted">More on TikTok</span>
+              <span class="works__outro-title">@dwsy.ae <span aria-hidden="true">↗</span></span>
+              <span class="mono muted"><span data-followers>89K</span> followers · <span data-profile-likes>13M</span> likes</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="works__foot">
+          <div class="works__progress"><span data-works-progress></span></div>
+          <span class="mono muted works__totals"><span data-total-views>19.3M</span> views · <span data-total-likes>2.6M</span> likes</span>
         </div>
       </div>
-
-      <div class="section-head">
-        <span class="mono">01 — Works</span>
-        <span class="mono muted">Hover to focus · click to play</span>
       </div>
-
-      <h2 id="works-title" class="visually-hidden">Selected Works</h2>
-      <!-- Cards are generated from the WORKS array in js/main.js -->
-      <div class="works__field" data-works></div>
 
       <!-- Text index of the same works -->
       <div class="works__index">
         <div class="works__index-head mono muted">
-          <span>No.</span><span>Character</span><span>Views</span><span>Share</span>
+          <span>No.</span><span>Character</span><span>Views</span><span>Likes</span><span>Share</span>
         </div>
         <ol class="works__list" data-index-list></ol>
         <div class="works__summary mono" data-summary></div>
@@ -138,24 +153,29 @@
 
       <div class="about__grid">
         <div class="stat">
-          <span class="stat__value" data-count data-total-views>16M+</span>
+          <span class="stat__value" data-followers>89K</span>
+          <span class="stat__label mono">Followers on TikTok</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value" data-profile-likes>13M</span>
+          <span class="stat__label mono">Likes on profile</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value" data-total-views>19.3M</span>
           <span class="stat__label mono">Views on selected works</span>
         </div>
         <div class="stat">
           <span class="stat__value" data-top-views>4.4M</span>
           <span class="stat__label mono">Top single edit</span>
         </div>
-        <div class="stat">
-          <span class="stat__value" data-work-count>8</span>
-          <span class="stat__label mono">Pieces in this selection</span>
-        </div>
-        <ul class="about__disciplines mono">
-          <li>Motion design</li>
-          <li>Music sync</li>
-          <li>Colour &amp; mood</li>
-          <li>Character edits</li>
-        </ul>
       </div>
+
+      <ul class="about__disciplines mono">
+        <li>Motion design</li>
+        <li>Music sync</li>
+        <li>Colour &amp; mood</li>
+        <li>Character edits</li>
+      </ul>
 
       <div class="about__process">
         <div class="process">
@@ -238,6 +258,7 @@
           <span class="modal__views-value"></span>
           <span class="mono muted">views</span>
         </div>
+        <span class="modal__likes mono muted"></span>
         <a class="modal__cta" href="#" target="_blank" rel="noopener">
           Watch on TikTok <span aria-hidden="true">↗</span>
         </a>
