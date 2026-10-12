@@ -25,11 +25,13 @@ python3 -m http.server 8000
 - **Videos / views / titles / card positions** — edit the `WORKS` array at the top of `js/main.js`.
   `x`/`y` are percentages inside the gallery field, `w` is card width, `depth` (0.5–1.5) controls
   parallax strength and stacking, `rot` is base rotation, `motif` picks the abstract cover
-  (`rings`, `bars`, `wave`, `grid`, `orbit`, `slash`). A card with `views: null` shows "New".
+  (`rings`, `bars`, `wave`, `grid`, `orbit`, `slash`). A card with `views: null` shows "New". Totals, averages and the index list are computed from this array.
 - **Colours** — CSS variables in `:root` (dark) and `:root[data-theme="light"]`.
 - **Player** — the modal embeds `https://www.tiktok.com/embed/v2/VIDEO_ID` in an iframe (`embedUrl` in `js/main.js`).
-- **Thumbnails** — fetched from TikTok oEmbed when the browser allows it; otherwise the generative
-  motif is shown.
+- **Thumbnails** — fetched from TikTok oEmbed; each card's media box takes the thumbnail's own aspect
+  ratio (no cropping). Until it loads, the generative motif is shown.
+- **Player size** — the iframe gets the embed's full height (video aspect + caption footer, refined by
+  the height TikTok reports) and is scaled to fit the screen, so it is never cropped.
 
 On screens ≤ 760px the free composition becomes a staggered two-column layout with gentler motion.
 `prefers-reduced-motion` disables floating and parallax.

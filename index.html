@@ -23,17 +23,21 @@
   </script>
 </head>
 <body>
-  <!-- Film grain + cursor -->
+  <!-- Atmosphere: grain, layout guides, ambient glow, cursor, scroll progress -->
   <div class="grain" aria-hidden="true"></div>
+  <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="glow" aria-hidden="true"></div>
   <div class="cursor" aria-hidden="true"><span class="cursor__label">Play</span></div>
+  <div class="progress" aria-hidden="true"><span class="progress__bar"></span></div>
+  <div class="index-preview" aria-hidden="true"><img alt=""></div>
 
   <!-- ============ NAV ============ -->
   <header class="nav">
     <a href="#top" class="nav__logo" aria-label="dwsy — back to top">dwsy<span>.</span></a>
     <nav class="nav__links" aria-label="Main">
-      <a href="#works">Works</a>
-      <a href="#about">About</a>
-      <a href="#links">Links</a>
+      <a href="#works"><span class="nav__no">01</span>Works</a>
+      <a href="#about"><span class="nav__no">02</span>About</a>
+      <a href="#links"><span class="nav__no">03</span>Links</a>
     </nav>
     <button class="theme-toggle" type="button" aria-label="Toggle light / dark theme">
       <span class="theme-toggle__dot"></span>
@@ -48,19 +52,24 @@
         <circle cx="500" cy="500" r="330" stroke-dasharray="2 10" />
         <circle cx="500" cy="500" r="460" />
         <circle class="hero__orbit-dot" cx="500" cy="40" r="3" />
+        <circle class="hero__orbit-dot" cx="830" cy="500" r="2" />
       </svg>
+      <div class="hero__cross hero__cross--a" aria-hidden="true"></div>
+      <div class="hero__cross hero__cross--b" aria-hidden="true"></div>
 
       <div class="hero__meta hero__meta--tl">
         <span class="mono">Creator / Editor</span>
         <span class="mono muted">@dwsy.ae</span>
+        <span class="mono hero__rec"><i></i>REC <span data-timecode>00:00:00:00</span></span>
       </div>
       <div class="hero__meta hero__meta--tr">
         <span class="mono">Selected works</span>
         <span class="mono muted">2025 — 2026</span>
+        <span class="mono muted" data-coords>X 0.00 / Y 0.00</span>
       </div>
 
       <h1 class="hero__title" aria-label="dwsy.">
-        <span class="hero__char">d</span><span class="hero__char">w</span><span class="hero__char">s</span><span class="hero__char">y</span><span class="hero__char hero__char--dot">.</span>
+        <span class="hero__mask" aria-hidden="true"><span class="hero__glyph">d</span></span><span class="hero__mask" aria-hidden="true"><span class="hero__glyph">w</span></span><span class="hero__mask" aria-hidden="true"><span class="hero__glyph">s</span></span><span class="hero__mask" aria-hidden="true"><span class="hero__glyph">y</span></span><span class="hero__mask hero__mask--dot" aria-hidden="true"><span class="hero__glyph">.</span></span>
       </h1>
 
       <p class="hero__tagline">
@@ -72,28 +81,55 @@
         <a href="#works" class="hero__scroll mono">
           <span class="hero__scroll-line"></span>Scroll
         </a>
-        <span class="mono muted"><span data-total-views>20M+</span> views</span>
+        <span class="mono muted"><span data-total-views>16M+</span> views · <span data-local-time>--:--</span></span>
       </div>
     </section>
+
+    <!-- ============ MARQUEE ============ -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track" data-marquee></div>
+    </div>
 
     <!-- ============ SELECTED WORKS ============ -->
     <section class="works" id="works" aria-labelledby="works-title">
       <div class="works__backdrop" aria-hidden="true">
         <div class="works__sticky">
-          <span class="works__kicker mono">( 10 )</span>
+          <span class="works__kicker mono">( <span data-work-count>8</span> )</span>
           <span class="works__big">Selected</span>
           <span class="works__big works__big--outline">Works</span>
+          <svg class="works__badge" viewBox="0 0 200 200" data-badge>
+            <defs><path id="badge-circle" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+            <text><textPath href="#badge-circle">SELECTED WORKS · 2025 — 2026 · DWSY · TIKTOK @DWSY.AE ·</textPath></text>
+            <circle cx="100" cy="100" r="3"/>
+          </svg>
         </div>
+      </div>
+
+      <div class="section-head">
+        <span class="mono">01 — Works</span>
+        <span class="mono muted">Hover to focus · click to play</span>
       </div>
 
       <h2 id="works-title" class="visually-hidden">Selected Works</h2>
       <!-- Cards are generated from the WORKS array in js/main.js -->
       <div class="works__field" data-works></div>
+
+      <!-- Text index of the same works -->
+      <div class="works__index">
+        <div class="works__index-head mono muted">
+          <span>No.</span><span>Character</span><span>Views</span><span>Share</span>
+        </div>
+        <ol class="works__list" data-index-list></ol>
+        <div class="works__summary mono" data-summary></div>
+      </div>
     </section>
 
     <!-- ============ ABOUT ============ -->
     <section class="about" id="about">
-      <div class="about__label mono">( About )</div>
+      <div class="section-head">
+        <span class="mono">02 — About</span>
+        <span class="mono muted">Short-form · 2025 — 2026</span>
+      </div>
       <p class="about__statement" data-reveal-words>
         Short-form anime and gacha edits. Dynamic, rhythmic, high-quality work
         where every cut lands on the beat — built around motion, music
@@ -102,15 +138,15 @@
 
       <div class="about__grid">
         <div class="stat">
-          <span class="stat__value" data-total-views>20M+</span>
+          <span class="stat__value" data-count data-total-views>16M+</span>
           <span class="stat__label mono">Views on selected works</span>
         </div>
         <div class="stat">
-          <span class="stat__value">4.4M</span>
+          <span class="stat__value" data-top-views>4.4M</span>
           <span class="stat__label mono">Top single edit</span>
         </div>
         <div class="stat">
-          <span class="stat__value">10</span>
+          <span class="stat__value" data-work-count>8</span>
           <span class="stat__label mono">Pieces in this selection</span>
         </div>
         <ul class="about__disciplines mono">
@@ -120,12 +156,30 @@
           <li>Character edits</li>
         </ul>
       </div>
+
+      <div class="about__process">
+        <div class="process">
+          <span class="process__no mono">A</span>
+          <h3>Sound first</h3>
+          <p>Every edit starts from the track. Cuts, zooms and flashes are mapped to the beat before any footage is placed.</p>
+        </div>
+        <div class="process">
+          <span class="process__no mono">B</span>
+          <h3>Motion second</h3>
+          <p>Camera shake, speed ramps and transitions carry the rhythm so the character always feels in motion.</p>
+        </div>
+        <div class="process">
+          <span class="process__no mono">C</span>
+          <h3>Mood last</h3>
+          <p>Colour and texture pull it together, so each piece reads as one short scene.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ============ LINKS ============ -->
     <section class="links" id="links">
       <div class="links__head">
-        <span class="mono">( Links )</span>
+        <span class="mono">03 — Links</span>
         <h2 class="links__title">Find me<br><span class="outline">elsewhere</span></h2>
       </div>
 
@@ -191,6 +245,7 @@
           <button type="button" class="modal__btn" data-prev aria-label="Previous work">←</button>
           <button type="button" class="modal__btn" data-next aria-label="Next work">→</button>
         </div>
+        <span class="mono muted modal__hint">Esc to close · ← → to browse</span>
       </div>
       <button type="button" class="modal__close" data-close aria-label="Close">
         <span></span><span></span>
